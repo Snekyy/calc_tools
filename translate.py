@@ -2,6 +2,11 @@ from functions import *
 
 
 def _str_to_monomial(monomial_str: str) -> Monomial:
+	""" Translates monomial expression in string format to Monomial object
+	
+		:param monomial_str: string, presenting monomial expression
+			e.g. "3*x^5*y^3*z^2"
+	"""
 	monomial_ls = [factor_str.split("^") for factor_str in monomial_str.split("*")]
 	const = 1.0
 	factors = {}
@@ -19,21 +24,23 @@ def _str_to_monomial(monomial_str: str) -> Monomial:
 
 
 def _str_to_polynomial(polynomial_str: str) -> Polynomial:
-	"""
-	String to polynomial object.
-	1. str -  3*x^5 + y^7
-	2. list[str] - [3*x^5, y^7]
-	3. list[list[str]] - [[3, x^5], [y^7]]
-	4. list[list[list[str]]] - [[[3], [x, 5]], [[y, 7]]]
+	""" Translates polynomial expression in string format to Polynomial object
+	
+		:param polynomial_str: string, presenting polynomial expression
+			e.g. "3*x^5*y^3*z^2 + 2*x^2"
 	"""
 	monomials = [_str_to_monomial(monomial_str) for monomial_str in polynomial_str.split(" + ")]
 	return Polynomial(monomials)
 
 
-def interpret(expression: list[str]) -> MathExpression:
-	""" Translates a list of strings to MathExpression object."""
+def interpret(expression_str: list[str]) -> MathExpression:
+	""" Translates math expression in string format to MathExpression object
+	
+		:param expression_str: string, presenting math expression
+			e.g. "3*x^5*y^3*z^2 + 2*x^2/x^5 + x^2/y^5"
+	"""
 	math_expr = []
-	for func_expr in expression:
+	for func_expr in expression_str:
 		if "/" in func_expr:
 			dividend, divisor = func_expr.split("/")
 			divisor: str
@@ -47,7 +54,10 @@ def interpret(expression: list[str]) -> MathExpression:
 
 
 def _monomial_to_str(monomial: Monomial) -> str:
-	# monomial is a constant
+	""" Takes Monomial object and returns its expression in string format 
+	
+		:param monomial: a monomial object, which is going to be used for translation
+	"""
 	if monomial.factors == Monomial.zero().factors:
 		return str(monomial.const)
 	else:
@@ -59,6 +69,10 @@ def _monomial_to_str(monomial: Monomial) -> str:
 
 
 def _polynomial_to_str(polynomial: Polynomial) -> str:
+	""" Takes Polynomila object and returns its expression in string format 
+	
+		:param polynomial: a polynomial object, which is going to be used for translation
+	"""
 	polynomial_ls = []
 	for monomial in polynomial.monomials:
 		monomial_str = _monomial_to_str(monomial)
@@ -69,7 +83,11 @@ def _polynomial_to_str(polynomial: Polynomial) -> str:
 	return " + ".join(polynomial_ls)
 
 
-def _function_expression_to_str(func_expr: RationalFunction) -> str:
+def _rational_function_to_str(func_expr: RationalFunction) -> str:
+	""" Takes RationalFunction object and returns its expression in string format 
+	
+		:param func_expr: a polynomial object, which is going to be used for translation
+	"""
 	dividend = _polynomial_to_str(func_expr.dividend)
 	divisor = _polynomial_to_str(func_expr.divisor)
 	if divisor == "1":
@@ -79,9 +97,12 @@ def _function_expression_to_str(func_expr: RationalFunction) -> str:
 
 
 def interpret_reverse(math_expr: MathExpression) -> str:
-	""" Translates from MathExpression object to string."""
+	""" Takes MathExpression object and returns its expression in string format 
+	
+		:param math_expr: a polynomial object, which is going to be used for translation
+	"""
 	math_expr_str = []
 	for func_expr in math_expr.expression:
-		math_expr_str.append(_function_expression_to_str(func_expr))
+		math_expr_str.append(_rational_function_to_str(func_expr))
 	return " + ".join(math_expr_str)
 
