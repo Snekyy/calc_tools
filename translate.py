@@ -42,14 +42,13 @@ def interpret(expression: list[str]) -> MathExpression:
 			dividend = func_expr
 			divisor: Polynomial = Polynomial.one()
 		dividend = _str_to_polynomial(dividend)
-		math_expr.append(FunctionExpression(dividend, divisor))
+		math_expr.append(RationalFunction(dividend, divisor))
 	return MathExpression(math_expr)
 
 
 def _monomial_to_str(monomial: Monomial) -> str:
-	if monomial == Monomial.zero():
-		return "0"
-	elif monomial.factors == Monomial.zero().factors:
+	# monomial is a constant
+	if monomial.factors == Monomial.zero().factors:
 		return str(monomial.const)
 	else:
 		monomial_ls = []
@@ -70,7 +69,7 @@ def _polynomial_to_str(polynomial: Polynomial) -> str:
 	return " + ".join(polynomial_ls)
 
 
-def _function_expression_to_str(func_expr: FunctionExpression) -> str:
+def _function_expression_to_str(func_expr: RationalFunction) -> str:
 	dividend = _polynomial_to_str(func_expr.dividend)
 	divisor = _polynomial_to_str(func_expr.divisor)
 	if divisor == "1":

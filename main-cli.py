@@ -5,12 +5,11 @@ from translate import interpret, interpret_reverse
 def main():
 	new_expr = []
 	while True:
-		tmp_expr = input("Enter next FunctionExpression: ")
+		tmp_expr = input("Enter next rational function: ")
 		if tmp_expr == "":
 			break
 		new_expr.append(tmp_expr)
 	math_expr = interpret(new_expr)
-	math_expr: MathExpression
 	diff_var = input("Enter a variable of differentiation: ")
 	math_expr.differentiate(diff_var)
 	print("Derivative is: ", interpret_reverse(math_expr))

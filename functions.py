@@ -4,58 +4,79 @@ from itertools import product
 
 
 class Monomial:
+	""" A model of a monomial (product of many variables)
 
-	def __eq__(self, other):
-		if self.factors == other.factors and self.const == other.const:
+		Attributes:
+			const: a integer, coefficient k in k*x^2*y^8*z^3, is a 1 by default.
+			factors: a dict of strings-integers, factors names(i.e. variables letters in monomial)
+				and their degrees in monomial.
+				E.g.: {"x": degree_x, "y": degree_y, ...}.
+				Factors may be an empty dict, if the monomial is just a constant.
+			variables: a set of strings, contains variables letter used in monomial product.
+				E.g. {"x", "y", ...}.
+	"""
+
+	def __hash__(self):
+		""" Is needed for Polynomial.__eq__"""
+		return hash((self.const, tuple(self.factors.items())))
+
+	def __eq__(self, another: 'Monomial'):
+		""" Two monomials equal, when all their factors are equal,
+			i.e. the constant and factors.
+
+			:param another: second argument in the equality, a Monomial object.
+		"""
+		if self.factors == another.factors and self.const == another.const:
 			return True
 		return False
 	
 	def __init__(self, factors: dict[str, int], const: float = 1.0):
-		""" A model of a monomial (product of many variables).
-		:param factors: A dict of factors names(i.e. variables letters);
-			i.e.: {"x": degree_x, "y": degree_y, ...}.
-			Factors may be an empty dict, then the monomial just a constant.
-		:param const: is a K in k*x^2*y^8*z^3, i.e. multipier.
-		"""
+		"""	Initialize self, creates variables attr using Monomial._count_variables"""
 		self.factors = factors
 		self.const = const
-		# variables in monomial. E.g. {"x", "y", ...}
-		self.variables: set = self.__count_variables()
+		self.variables: set = self._count_variables()
 
 	@staticmethod
 	def zero():
-		return Monomial({}, 0)
+		""" Creates and returns monomial identity to zero"""
+		zero = Monomial({}, 0)
+		zero.variables = set()
+		return zero
 
 	@staticmethod
 	def one():
-		return Monomial({}, 1)
+		""" Creates and returns monomial identity to one"""
+		one = Monomial({}, 1)
+		one.variables = set()
+		return one
 
-	def __count_variables(self) -> set:
-		""" Returns a set of the monomial variables."""
+	def _count_variables(self) -> set:
+		""" Returns a set of variables(variables letter, i.e. strings), used in monomial"""
 		return set(self.factors.keys())
 
 	def _cleanup(self) -> None:
-		""" If the Monomial's const is a zero, changes the Monomials's 
-		factors to a Monomial.zero().factors, i. e an empty dict.
-		If the Monomial has zeros in factors.values(), i. e.
-		variables in a monomials's product at a zero degrees,
-		deletes that factors's.
+		""" Makes monomial's expression(self) more simple:
+			if the monomial's const is a zero, changes the Monomials's 
+			factors to a Monomial.zero().factors, i. e an empty dict;
+			if the monomial has zeros in factors.values(), i. e.
+			variables in a monomials's product at a zero degrees,
+			deletes those useless factors. Updates the variables at the end.
 		"""
-		old_factors = self.factors
+		old_factors: dict = self.factors
 		if self.const == 0:
-			new_factors = Monomial.zero().factors
+			self.factors = Monomial.zero().factors
 		else:
 			new_factors = {}
 			for var, degree in old_factors.items():
 				if degree != 0:
 					new_factors[var] = degree
-		self.factors = new_factors
-		# Update Monomial's variables attr
-		self.variables = self.__count_variables()
+			self.factors = new_factors
+		self.variables = self._count_variables()
 
 	def value(self, args: dict[str, float]) -> float:
-		""" Returns a value of a monomial in (x, y, z, ...),
-		where x, y, z = args["x"], args["y"], args["z"]
+		""" Returns a value of a monomial
+
+			:param args: dict of str-float, i.e. values of variables in monomial.
 		"""
 		value = self.const
 		for key in args:
@@ -65,40 +86,65 @@ class Monomial:
 
 
 class Polynomial:
-	def __init__(self, monomials: list[Monomial]):
-		""" A model of a polynomial of many variables(sum of monomials).
-		:param monomials: list of the monomials in polynomial.
+	""" A model of a polynomial (sum of monomials)
+
+		Attributes:
+			monomials: a list of monomials, i.e. terms(monomials) in the sum.
+			variables: a set of strings, which contains variables letter
+				used in monomial product, e.g. {"x", "y", ...}.
+	"""
+
+	def __eq__(self, another: 'Polynomial'):
+		""" Two polynomials equal, when they have the same monomials,
+			i.e. one set of monomials is equal to another set of monomials.
+
+			:param another: second argument in the equality, i.e. a Polynomial.
 		"""
+		if set(self.monomials) == set(another.monomials):
+			return True
+		else:
+			return False
+
+	def __init__(self, monomials: list[Monomial]):
+		""" Initialize self, creates variables attr using Polynomial._count_variables"""
 		self.monomials = monomials
-		self.variables: set = self.__count_variables()
+		self.variables: set = self._count_variables()
+
+	@staticmethod
+	def zero():
+		""" Creates and returns polynomial identity to zero"""
+		zero = Polynomial([Monomial.zero()])
+		zero.variables = set()
+		return zero
 
 	@staticmethod
 	def one():
-		return Polynomial([Monomial.one()])
+		""" Creates and returns polynomial identity to one"""
+		one = Polynomial([Monomial.one()])
+		one.variables = set()
+		return one
 
-	def __cleanup(self):
-		""" Remove zero monomials from polynomial."""
-		for monomial in self.monomials:
-			monomial._cleanup()
-			if monomial == Monomial.zero():
-				self.monomials.remove(monomial)
-		# if all monomials were zeros
-		if len(self.monomials) == 0:
-			self.monomials.append(Monomial.zero())
-		self.variables = self.__count_variables()
-	
-	def __count_variables(self):
-		""" Returns set of variables in polynomial(monomials)."""
+	def _count_variables(self) -> set:
+		""" Returns a set of variables(variables letter, i.e. strings)
+			used in polynomial, i.e. union of sets of variables of all monomials
+		"""
 		variables = set()
 		for monomial in self.monomials:
 			variables |= monomial.variables
 		return variables
 
-	def simplify(self) -> None:
-		""" Combines like terms in polynomial and deletes
-		zero monomials, i.e. Monomial.zero().
+	def _cleanup(self) -> None:
+		""" Makes polynomial's expression(self) more simple:
+			apply Monomial._cleanup to every monomial in polinomial,
+			combines like terms using Polynomial._combine_like_terms, which
+			removes zero-monomials and updates variables.
 		"""
-		# combines like terms(monomials)
+		for monomial in self.monomials:
+			monomial._cleanup()
+		self._combine_like_terms()
+
+	def _combine_like_terms(self) -> None:
+		""" Combines like terms in the polynomial and removes zero-monomials"""
 		old_monomials = self.monomials
 		new_monomials = []
 		monomial_factors = [m_i.factors for m_i in old_monomials]
@@ -114,125 +160,193 @@ class Polynomial:
 		for like_monomials_i in monomial_counter.values():
 			factors = monomial_factors[like_monomials_i[0]]
 			const = sum([old_monomials[i].const for i in like_monomials_i])
-			new_monomials.append(Monomial(factors, const))
-		self.monomials = new_monomials
-		# deleting zero monomials
-		self.__cleanup()
-		# updating variables list
-		self.variables = self.__count_variables()
+			if const != 0:
+				new_monomials.append(Monomial(factors, const))
+		# if monomials is empty, i.e. sum of monomials is equal to zero
+		# so even a zero-monomial wasn't included, 
+		# fixing that adding zero-monomial to monomials
+		if len(new_monomials) == 0:
+			self.monomials = Polynomial.zero().monomials
+		else:
+			self.monomials = new_monomials
+		self.variables = self._count_variables()
 
 	def square(self) -> None:
-		""" Squares a polynomial."""
-		squared_polynomial = Product(self, self).multiply()
-		self.monomials = squared_polynomial.monomials
-		self.simplify()
+		""" Squares the polynomial"""
+		self.monomials = Product(self, self).multiply().monomials
 
-	def minus(self):
-		""" Returns polynomial mulitplied on a -1 for
-			changing the sign of a polynomial.
+	def minus(self) -> None:
+		""" Returns the polynomial mulitplied on a -1, i. e.
+			changes a sign of the polynomial
 		""" 
 		minus_one_monomial = Monomial({}, -1)
 		minus_one_polynomial = Polynomial([minus_one_monomial])
 		self.monomials = Product(self, minus_one_polynomial).multiply().monomials
 
 	def value(self, args: dict[str, float]) -> float:
-		""" Returns a value of a polynomial in (x, y, z, ...),
-		where x, y, z = args["x"], args["y"], args["z"]
+		""" Returns a value of a polynomial
+
+			param args: dict of str-float; values of variables in polynomial.
 		"""
 		return sum([monomial.value(args) for monomial in self.monomials])
 
 
-class FunctionExpression:
-	def __init__(self, poly_dividend: Polynomial, poly_divisor: Polynomial):
-		""" A model of a rational function of many variables (fraction):
-		:param poly_dividend: polynom in numerator(dividend);
-		:param poly_divisor: polynom in denumerator(divisor).
+class RationalFunction:
+	""" A model of a rational function (fraction of polynomials)
+
+		Attributes:
+			dividend: a polynomial in numerator;
+			divisor: a polynomial in denumerator;
+			variables: a set of strings, which contains variables letter
+				used in rational function, e.g. {"x", "y", ...}.
+	"""
+
+	def __eq__(self, another: 'RationalFunction'):
+		""" Two rational functions equal when: 1) dividend are zeros;
+			2) dividend of one equals to dividend of another one and 
+			divisor of one equals to dividinnd of another one.
+			
+			:param another: second argument in equality, a RationalFunction object
 		"""
-		self.dividend: Polynomial = poly_dividend
-		self.divisor: Polynomial = poly_divisor
-		# Variables used in the rational function
-		self.variables: set = self.__count_variables()
+		if self.dividend == another.dividend and self.divisor == another.divisor:
+			return True
+		elif self.dividend == Polynomial.zero() and another.dividend == Polynomial.zero():
+			return True
+		else:
+			return False
 
-	def __count_variables(self):
-		return self.dividend.variables | self.divisor.variables
+	def __init__(self, dividend: Polynomial, divisor: Polynomial):
+		""" Initialize self and create variables attr using RationalFunction._count_variables
 
-	def simplify(self):
+			:param dividend: polynomial in numerator (i.e. dividend);
+			:param divisor: polynomial in denumerator (i.e. divisor).
+		"""
+		self.dividend: Polynomial = dividend
+		self.divisor: Polynomial = divisor
+		self.variables: set = self._count_variables()
+
+	@staticmethod
+	def zero():
+		""" Creates and returns rational function identity to zero"""
+		zero = RationalFunction(Polynomial.zero(), Polynomial.one())
+		zero.variables = set()
+		return zero
+
+	@staticmethod
+	def one():
+		""" Creates and returns rational function identity to one"""
+		one = RationalFunction(Polynomial.one(), Polynomial.one())
+		one.variables = set()
+		return one
+
+	def _count_variables(self) -> set:
 		""" Returns set of variables in MathExpression,
 			i.e. in union of polynom-dividend variables and 
-			polynom-divisor variables.
+			polynom-divisor variables
 		"""
-		self.dividend.simplify()
-		self.divisor.simplify()
-		self.variables = self.__count_variables()
+		return self.dividend.variables | self.divisor.variables
+
+	def _cleanup(self) -> None:
+		""" Applies RationalFunction.__cleaup to poly_dividend, poly_divisor
+			and updates the variables
+		"""
+		self.dividend._cleanup()
+		self.divisor._cleanup()
+		if self.dividend == Polynomial.zero():
+			self.divisor = Polynomial.one()
+		self.variables = self._count_variables()
 
 	def value(self, args: dict[str, float]) -> float:
-		""" Returns a value of a rational function in (x, y, z, ...),
-		where x, y, z = args["x"], args["y"], args["z"]
+		""" Returns a value of a rational function
+
+			param args: dict of str-float; values of variables in polynomial.
 		"""
 		return self.dividend.value(args)/self.divisor.value(args)
 
 
 class MathExpression:
-	def __init__(self, expression: list[FunctionExpression]):
-		""" A model of sum of rational functions of many variables.
-		:param expression: a list of a FunctionExpresstions(i.e rational functions)
-		"""
-		self.expression: list[FunctionExpression] = expression
-		self.simplify()
-		# Variables used in a rational functions of that sum(MathExpression)
-		self.variables: set = self.__count_variables()
+	""" A model of a sum of a rational functions.
 
-	def __count_variables(self):
+		Attributes:
+			expression: a list of rational functions, i.e. terms in the sum;
+			variables: a set of strings, which contains variables letter
+				used in math expresstion, e.g. {"x", "y", ...}.
+	"""
+
+	def __init__(self, expression: list[RationalFunction]):
+		""" Initialize self, creates variables attr using MathExpression._count_variables
+			and apply MathExpression.__cleanup to self.
+		
+			:param expression: a list of a RationalFunction objects.
+		"""
+		self.expression: list[RationalFunction] = expression
+		# Variables used in a sum of rational functions (i.e MathExpression)
+		self.variables: set = self._count_variables()
+		# Simplifing the expression after user entering it
+		self.__cleanup()
+
+	def _count_variables(self) -> set:
 		""" Returns set of variables in union of all
-			FunctionExpressions in self.expression, i.e. returns
-			variables, which are used in the sum of rational functions."""
+			RationalFunctions in self.expression, i.e. returns
+			variables, which are used in the sum of rational functions.
+		"""
 		variables = set()
 		for func_expr in self.expression:
 			variables = variables | func_expr.variables
 		return variables
-	
-	def simplify(self):
-		""" Runs simplify() to every FunctionExpression in self.expression.
-		"""
-		for func_expr in self.expression:
-			func_expr.simplify()
 
-	def differentiate(self, var: str) -> None:
-		""" Differentiates "self" (MathExpression), i.e. finds
-		derivatives of every FunctionExpression(rational function) in 
-		that MathExpression(sum) and changes expression atr
-		in that MathExpression
-		:param var: A variable of a differentiation. E.g. var="x".
+	def __cleanup(self) -> None:
+		""" Applies RationalFunction._cleanup to every RationalFunction in the MathExpression,
+			removes zero-RationalFunctions and updates variables
 		"""
-		derivative_expr = []
 		for func_expr in self.expression:
-			derivative_expr.append(Derivative(func_expr, var)._find())
-		self.expression = derivative_expr
-		self.simplify()
-		self.variables = self.__count_variables()
+			func_expr._cleanup()
+			if func_expr == RationalFunction.zero():
+				self.expression.remove(func_expr)
+		if len(self.expression) == 0:
+			self.expression.append(RationalFunction.zero())
+		self.variables = self._count_variables()
+		
+	def differentiate(self, var: str) -> None:
+		""" Differentiates itself (MathExpression), i.e. finds
+			derivatives of every RationalFunction(rational function) in 
+			that MathExpression(sum) and changes expression atr
+			in that MathExpression
+
+			:param var: A variable of a differentiation. E.g. var="x".
+		"""
+		self.expression = Derivative(var)._diff(self).expression
+		self.__cleanup()
 
 	def value(self, args: dict[str, float]) -> float:
 		""" Returns a sum of FunctionExprestion's values in self.expression.
-		:param args: len(self.variables == len(my_dict) is True
-		:return: sum of value FuncExpressions
+
+			:param args: len(self.variables) should be equal to len(args);
+			:return: sum of RationalFunctions' values.
 		"""
+		# validation of entered agrs
+		assert set(args.keys()) == self.variables
 		return sum([func_expr.value(args) for func_expr in self.expression])
 
 
 class Product:
+	"""	A model of a product of Polynomials/Monomials
+	
+		Attributes:
+			factor1: a polynomial or a monomial which is a factor in the product;
+			factor2: the same.
+	"""
+
 	def __init__(self, factor1: Union[Polynomial, Monomial], factor2: Union[Polynomial, Monomial]):
-		"""	A model of a product of Polynomials/Monomials.
-		Main method of the class is "multiply".
-		:param factor1: a polynom or a monomial which
-		 is a factor in the product
-		:param factor2: the same
+		""" :param factor1: a polynomial or a monomial which is a factor in the product;
+			:param factor2: the same
 		"""
 		assert type(factor1) == type(factor2)
 		self.factor1: Union[Polynomial, Monomial] = factor1
 		self.factor2: Union[Polynomial, Monomial] = factor2
 
-	def _multiply_monomials(self) -> Monomial:
-		"""	Returns a product of two monomials."""
+	def __multiply_monomials(self) -> Monomial:
+		"""	Returns a product of two monomials"""
 		const = self.factor1.const * self.factor2.const
 		factors = {}
 		variables = self.factor1.variables | self.factor2.variables
@@ -242,63 +356,70 @@ class Product:
 			factors[var_i] = deg1 + deg2
 		return Monomial(factors, const)
 
-	def _multiply_polynomials(self) -> Polynomial:
-		""" Returns a product of two polinomials."""
+	def __multiply_polynomials(self) -> Polynomial:
+		""" Returns a product of two polinomials"""
 		monomials = []
 		for monomial_1, monomial_2 in product(self.factor1.monomials, self.factor2.monomials):
-			monomials.append(Product(monomial_1, monomial_2)._multiply_monomials())
-		return Polynomial(monomials)
+			monomials.append(Product(monomial_1, monomial_2).__multiply_monomials())
+		poly_product = Polynomial(monomials)
+		poly_product._combine_like_terms()
+		poly_product.variables = poly_product._count_variables()
+		return poly_product
 
 	def multiply(self) -> Union[Polynomial, Monomial]:
-		""" Returns a product of two Polynomials/Monomials."""
+		""" Returns a product of two Polynomials/Monomials"""
 		if isinstance(self.factor1, Polynomial):
-			return self._multiply_polynomials()
+			return self.__multiply_polynomials()
 		else:
-			return self._multiply_monomials()
+			return self.__multiply_monomials()
 
 
-class Derivative(FunctionExpression):
+class Derivative:
+	""" Derivative class is used for creating a MathExpression object,
+		which is a derivative of a Derivative._diff parameter
+
+		Attributes:
+			var: a strings, letter; a variable of differentiation.
 	"""
-	Этот класс создан, чтобы находить производную для FunctionExpression
-	Его основной метод - find - возвращает объект типа FunctionExpression, который
-	и является производной входного FunctionExpression.
-	"""
-	def __init__(self, function: FunctionExpression, var: str):
-		"""	
-		:param function: a function that will be differentiated;
-		:param var: a variable of differentiation.
-		"""
-		super().__init__(function.dividend, function.divisor)
+	def __init__(self, var: str):
+		"""	:param var: a variable of differentiation"""
 		self.var: str = var
 
-	def _differentiate_monomial(self, monomial: Monomial) -> Monomial:
-		""" Returns a derivative of a monomial."""
-		if self.var not in monomial.factors or monomial.factors[self.var] == 0:
+	def __differentiate_monomial(self, monomial: Monomial) -> Monomial:
+		""" Returns a Monomial object - derivative of a monomial"""
+		if self.var not in monomial.factors:
 			return Monomial.zero()
 		else:
 			const = monomial.const * monomial.factors[self.var]
 			factors = deepcopy(monomial.factors)
 			factors[self.var] -= 1
-			return Monomial(factors, const)
+			deriv_monomial = Monomial(factors, const)
+			return deriv_monomial
 
-	def _differentiate_polynomial(self, polynomial: Polynomial) -> Polynomial:
-		""" Returns a derivative of a polynomial."""
+	def __differentiate_polynomial(self, polynomial: Polynomial) -> Polynomial:
+		""" Returns a Polynomial - derivative of a polynomial"""
 		monomials = []
 		for monomial in polynomial.monomials:
-			monomials.append(self._differentiate_monomial(monomial))
-		return Polynomial(monomials)
+			monomials.append(self.__differentiate_monomial(monomial))
+		poly_deriv = Polynomial(monomials)
+		poly_deriv._cleanup()
+		poly_deriv.variables = poly_deriv._count_variables()
+		return poly_deriv
 
-	def _find(self) -> FunctionExpression:
-		""" Returns a derivative of a fraction(FunctionExpression)."""
-		divisor = self.divisor
-		if self.var in self.divisor.variables:
-			monomials = []
-			first_term = Product(self._differentiate_polynomial(self.dividend), self.divisor).multiply()
-			second_term = Product(self.dividend, self._differentiate_polynomial(self.divisor)).multiply()
-			second_term.minus()
-			monomials += first_term.monomials + second_term.monomials
-			dividend = Polynomial(monomials)
-			divisor.square()
-		else:
-			dividend = self._differentiate_polynomial(self.dividend)
-		return FunctionExpression(dividend, divisor)
+	def _diff(self, function: MathExpression) -> MathExpression:
+		""" Returns a MathExpression - derivative of a MathExpression"""
+		deriv_expr = []
+		for func_expr in function.expression:
+			divisor = deepcopy(func_expr.divisor)
+			dividend = deepcopy(func_expr.dividend)
+			if self.var in divisor.variables:
+				first_term = Product(self.__differentiate_polynomial(dividend), divisor).multiply()
+				second_term = Product(dividend, self.__differentiate_polynomial(divisor)).multiply()
+				second_term.minus()
+				monomials = first_term.monomials + second_term.monomials
+				dividend = Polynomial(monomials)
+				divisor.square()
+			else:
+				dividend = self.__differentiate_polynomial(dividend)
+			deriv_expr.append(RationalFunction(dividend, divisor))
+		return MathExpression(deriv_expr)
