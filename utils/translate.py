@@ -1,4 +1,4 @@
-from functions import *
+from .functions import *
 
 
 def _str_to_monomial(monomial_str: str) -> Monomial:
