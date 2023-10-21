@@ -19,7 +19,6 @@ class Monomial:
 	def __hash__(self):
 		""" Is needed for Polynomial.__eq__"""
 		return hash((self.const, tuple(self.factors.items())))
-
 	def __eq__(self, another: 'Monomial'):
 		""" Two monomials equal, when all their factors are equal,
 			i.e. the constant and factors.
@@ -325,8 +324,12 @@ class MathExpression:
 			:return: sum of RationalFunctions' values.
 		"""
 		# validation of entered agrs
-		assert set(args.keys()) == self.variables
+		assert self.variables.issubset(set(args.keys())) 
 		return sum([func_expr.value(args) for func_expr in self.expression])
+	
+	def value_err(self, args: dict[str, float], args_err: dict[str, float]):
+		deriv_x_err = [(args_err[var]*Derivative(var)._diff(self).value(args))**2 for var in args.keys()]
+		return sum(deriv_x_err)**0.5
 
 
 class Product:
@@ -384,6 +387,7 @@ class Derivative:
 	def __init__(self, var: str):
 		"""	:param var: a variable of differentiation"""
 		self.var: str = var
+		
 
 	def __differentiate_monomial(self, monomial: Monomial) -> Monomial:
 		""" Returns a Monomial object - derivative of a monomial"""
@@ -420,6 +424,6 @@ class Derivative:
 				dividend = Polynomial(monomials)
 				divisor.square()
 			else:
-				dividend = self.__differentiate_polynomial(dividend)
+				dividend = deepcopy(self.__differentiate_polynomial(dividend))
 			deriv_expr.append(RationalFunction(dividend, divisor))
 		return MathExpression(deriv_expr)
