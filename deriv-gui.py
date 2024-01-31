@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import QPushButton, QApplication
 from PyQt6.QtGui import QGuiApplication
 from PyQt6 import uic
 
-from utils.translate import interpret, interpret_reverse
+from libs.translate import interpret, interpret_reverse
 
 
 # noinspection PyUnresolvedReferences
@@ -19,7 +19,7 @@ class AppConverter(QMainWindow):
         qr.moveCenter(QGuiApplication.primaryScreen().availableGeometry().center())
         self.move(qr.topLeft())
 
-        uic.loadUi('./utils/main.ui', self)
+        uic.loadUi('./libs/main.ui', self)
         # **********************************************************************************
         # Работа с выражениями
         self.qline_expression: QLineEdit  # Строка для ввода выражения

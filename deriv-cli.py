@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-from utils.translate import interpret, interpret_reverse
+from libs.translate import interpret, interpret_reverse
 
 
 def main():
